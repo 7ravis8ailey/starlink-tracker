@@ -162,14 +162,7 @@ const GlobeView = ({ userLocation }) => {
         objectLng="lng"
         objectAltitude="alt"
         objectThreeObject={satelliteObject}
-        objectLabel={d => `
-          <div style="background: rgba(0,0,0,0.9); padding: 8px; border-radius: 5px; border: 1px solid #4a9eff;">
-            <strong style="color: #4a9eff;">${d.name}</strong><br/>
-            <span style="color: #fff;">Altitude: ${d.altitude ? d.altitude.toFixed(0) : '---'} km</span><br/>
-            <span style="color: #fff;">Velocity: ${d.velocity ? (d.velocity * 3.6).toFixed(1) : '---'} km/h</span><br/>
-            <span style="color: #aaa;">Lat: ${d.lat.toFixed(2)}°, Lng: ${d.lng.toFixed(2)}°</span>
-          </div>
-        `}
+        objectLabel={() => null}
         
         // User location marker
         labelsData={userLocation ? [{
