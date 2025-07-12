@@ -201,7 +201,7 @@ const GlobeView = ({ userLocation }) => {
             {lastUpdated && (
               <p>LAST ORBITAL UPDATE: {lastUpdated.toLocaleTimeString()}</p>
             )}
-            <p className="technical-status">● REAL-TIME SGP4 PROPAGATION ACTIVE</p>
+            <p className="technical-status">REAL-TIME SGP4 PROPAGATION ACTIVE</p>
           </>
         ) : (
           <p>⚠ SATELLITE DATA UNAVAILABLE</p>

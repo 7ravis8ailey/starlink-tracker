@@ -262,6 +262,27 @@
   letter-spacing: 0.08em;
 }
 
+.technical-status::before {
+  content: '●';
+  margin-right: 0.5em;
+  animation: status-ping 2s ease-in-out infinite;
+}
+
+@keyframes status-ping {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Form Section */
 .form-section {
   width: 100%;
