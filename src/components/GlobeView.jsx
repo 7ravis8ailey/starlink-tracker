@@ -40,13 +40,30 @@ const GlobeView = ({ userLocation }) => {
           setLoadingProgress(75)
           setLoadingMessage('Initializing tracking system...')
           
-          // Parse TLE data into satellite records (limit initial processing)
+          // Parse ALL TLE data into satellite records
           const allSatellites = response.data.satellites
-          const limitedSatellites = allSatellites.slice(0, 1000) // Process only first 1000 for faster loading
-          const parsedSatellites = parseTLEData(limitedSatellites)
-          console.log(`Successfully parsed ${parsedSatellites.length} satellites (from ${allSatellites.length} total)`)
+          console.log(`Processing all ${allSatellites.length} Starlink satellites...`)
           
-          setSatelliteCount(allSatellites.length) // Show full count in UI
+          // Process in chunks to prevent UI blocking
+          const chunkSize = 500
+          const parsedSatellites = []
+          
+          for (let i = 0; i < allSatellites.length; i += chunkSize) {
+            const chunk = allSatellites.slice(i, i + chunkSize)
+            const parsedChunk = parseTLEData(chunk)
+            parsedSatellites.push(...parsedChunk)
+            
+            // Update progress for each chunk
+            const progress = 75 + (i / allSatellites.length) * 15
+            setLoadingProgress(Math.min(90, progress))
+            setLoadingMessage(`Processing satellites: ${i + chunkSize}/${allSatellites.length}`)
+            
+            // Allow UI to breathe between chunks
+            await new Promise(resolve => setTimeout(resolve, 10))
+          }
+          
+          console.log(`Successfully parsed all ${parsedSatellites.length} satellites`)
+          setSatelliteCount(parsedSatellites.length)
           setLoadingProgress(90)
           
           // Initialize satellite tracker
@@ -58,13 +75,12 @@ const GlobeView = ({ userLocation }) => {
           
           // Start real-time position updates
           trackerRef.current.startTracking((positions) => {
-            // PERFORMANCE: Only render satellites above 200km and limit to 500 total
-            const filteredPositions = positions
-              .filter(pos => pos.alt > 200) // Remove low/decaying satellites
-              .slice(0, 500) // Limit to 500 satellites for performance
+            // Keep ALL active satellites, only filter out decayed ones
+            const activeSatellites = positions
+              .filter(pos => pos.alt > 100) // Remove only decayed satellites below 100km
             
             // Transform positions for globe visualization
-            const satData = filteredPositions.map(pos => ({
+            const satData = activeSatellites.map(pos => ({
               id: pos.id,
               name: pos.name,
               lat: pos.lat,
@@ -126,16 +142,33 @@ const GlobeView = ({ userLocation }) => {
     }
   }, [userLocation])
 
-  // Cache geometry and material for better performance
-  const satelliteGeometry = new THREE.SphereGeometry(0.25, 6, 4) // Even smaller, lower poly
+  // Cache multiple LOD geometries for better performance with thousands of satellites
+  const satelliteGeometryLOD = {
+    near: new THREE.SphereGeometry(0.3, 8, 6),   // High quality when zoomed in
+    mid: new THREE.SphereGeometry(0.25, 6, 4),   // Medium quality
+    far: new THREE.BoxGeometry(0.4, 0.4, 0.4)    // Simple box when zoomed out
+  }
+  
   const satelliteMaterial = new THREE.MeshBasicMaterial({ 
     color: '#4a9eff',
-    transparent: false, // Remove transparency for better performance
+    transparent: false,
     opacity: 1
   })
 
-  const satelliteObject = () => {
-    return new THREE.Mesh(satelliteGeometry, satelliteMaterial)
+  const satelliteObject = (satellite) => {
+    // Use simpler geometry for satellites when viewing many
+    const altitude = globeEl.current?.camera()?.position?.length() || 3
+    let geometry
+    
+    if (altitude < 1.5) {
+      geometry = satelliteGeometryLOD.near  // Close zoom - high quality
+    } else if (altitude < 2.5) {
+      geometry = satelliteGeometryLOD.mid   // Medium zoom
+    } else {
+      geometry = satelliteGeometryLOD.far   // Far zoom - simple boxes
+    }
+    
+    return new THREE.Mesh(geometry, satelliteMaterial)
   }
 
   return (
@@ -198,7 +231,17 @@ const GlobeView = ({ userLocation }) => {
         rendererConfig={{ 
           antialias: false, // Disable antialiasing for better performance
           alpha: false,
-          powerPreference: "low-power" // Optimize for battery life
+          powerPreference: "low-power", // Optimize for battery life
+          logarithmicDepthBuffer: true // Better depth handling for many objects
+        }}
+        
+        // Performance optimizations for many satellites
+        onGlobeReady={() => {
+          if (globeEl.current) {
+            const scene = globeEl.current.scene()
+            // Add fog to fade distant satellites for better performance
+            scene.fog = new THREE.Fog(0x0a0e27, 8, 15)
+          }
         }}
         width={Math.min(600, window.innerWidth - 40)}
         height={window.innerWidth > 768 ? 600 : Math.min(400, window.innerHeight * 0.4)}
