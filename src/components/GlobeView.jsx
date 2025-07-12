@@ -114,7 +114,12 @@ const GlobeView = ({ userLocation }) => {
     <div className="globe-container">
       {loading && (
         <div className="globe-loading">
-          <p>Loading satellites...</p>
+          <div className="sonar-container">
+            <div className="sonar-ping"></div>
+          </div>
+          <div className="loading-text">Tracking Starlink</div>
+          <div className="loading-text">Real-Time Locations</div>
+          <div className="loading-subtext">Acquiring orbital data...</div>
         </div>
       )}
       
@@ -166,17 +171,20 @@ const GlobeView = ({ userLocation }) => {
       
       <div className="satellite-info">
         {loading ? (
-          <p>Loading Starlink constellation...</p>
+          <div className="technical-loading">
+            <p>INITIALIZING ORBITAL TRACKING SYSTEM...</p>
+          </div>
         ) : satelliteCount > 0 ? (
           <>
-            <p><strong>Currently Tracking {satellites.length} Starlink Satellites</strong></p>
-            <p>Total in Constellation: {satelliteCount}</p>
+            <p><strong>◉ ACTIVE TRACKING: {satellites.length} STARLINK SATELLITES</strong></p>
+            <p>CONSTELLATION SIZE: {satelliteCount.toLocaleString()} UNITS</p>
             {lastUpdated && (
-              <p>Last Updated: {lastUpdated.toLocaleTimeString()}</p>
+              <p>LAST ORBITAL UPDATE: {lastUpdated.toLocaleTimeString()}</p>
             )}
+            <p className="technical-status">● REAL-TIME SGP4 PROPAGATION ACTIVE</p>
           </>
         ) : (
-          <p>No satellite data available</p>
+          <p>⚠ SATELLITE DATA UNAVAILABLE</p>
         )}
       </div>
     </div>

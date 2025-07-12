@@ -66,10 +66,100 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.8);
-  padding: 1rem 2rem;
-  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.9);
+  padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid rgba(74, 158, 255, 0.4);
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  backdrop-filter: blur(10px);
+}
+
+/* Sonar Ping Animation */
+.sonar-container {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin-bottom: 1rem;
+}
+
+.sonar-ping {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  background: #4a9eff;
+  border-radius: 50%;
+  animation: sonar-pulse 2s ease-out infinite;
+}
+
+.sonar-ping:before,
+.sonar-ping:after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  background: rgba(74, 158, 255, 0.6);
+  border-radius: 50%;
+  animation: sonar-ring 2s ease-out infinite;
+}
+
+.sonar-ping:after {
+  animation-delay: 0.5s;
+}
+
+@keyframes sonar-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes sonar-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(2);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+.loading-text {
+  color: #4a9eff;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.loading-subtext {
+  color: #a0b3d3;
+  font-size: 0.85rem;
+  text-align: center;
+  margin-top: 0.5rem;
+  font-family: 'Courier New', monospace;
 }
 
 .satellite-info {
@@ -91,6 +181,21 @@
 .satellite-info strong {
   color: #ffffff;
   font-size: 1rem;
+}
+
+.technical-loading {
+  font-family: 'Courier New', monospace;
+  color: #4a9eff;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.technical-status {
+  font-family: 'Courier New', monospace;
+  color: #00ff88 !important;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+  font-weight: 600;
 }
 
 /* Form Section */
