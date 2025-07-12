@@ -198,7 +198,6 @@ const GlobeView = ({ userLocation }) => {
         ) : satelliteCount > 0 ? (
           <>
             <p><strong>◉ ACTIVE TRACKING: {satellites.length} STARLINK SATELLITES</strong></p>
-            <p>CONSTELLATION SIZE: {satelliteCount.toLocaleString()} UNITS</p>
             {lastUpdated && (
               <p>LAST ORBITAL UPDATE: {lastUpdated.toLocaleTimeString()}</p>
             )}
