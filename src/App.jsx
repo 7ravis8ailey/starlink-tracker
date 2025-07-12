@@ -32,12 +32,18 @@ function App() {
           <UnsubscribeForm token={unsubscribeToken} />
         ) : (
           <>
-            <section className="globe-section">
-              <GlobeView userLocation={userLocation} />
+            <section className="hero-section">
+              <div className="globe-section">
+                <GlobeView userLocation={userLocation} />
+              </div>
             </section>
 
             <section className="form-section">
-              <SubscriptionForm onLocationSet={handleLocationSet} />
+              <div className="form-container">
+                <h2 className="form-title">Get Personal Alerts</h2>
+                <p className="form-description">Subscribe for location-based notifications when Starlink satellites pass overhead</p>
+                <SubscriptionForm onLocationSet={handleLocationSet} />
+              </div>
             </section>
           </>
         )}

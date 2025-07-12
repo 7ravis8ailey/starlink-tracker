@@ -36,16 +36,29 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem 1rem;
-  gap: 3rem;
+  padding: 1rem;
+  gap: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 @media (min-width: 1024px) {
   .app-main {
     flex-direction: row;
-    justify-content: center;
+    justify-content: space-between;
     align-items: flex-start;
+    gap: 3rem;
+    padding: 2rem;
   }
+}
+
+/* Better visual hierarchy */
+.hero-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
 }
 
 /* Globe Section */
@@ -154,11 +167,31 @@
   text-transform: uppercase;
 }
 
+.loading-progress {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.progress-bar {
+  width: 200px;
+  height: 4px;
+  background: rgba(74, 158, 255, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 0 auto 0.75rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4a9eff, #00d4ff);
+  transition: width 0.3s ease;
+  border-radius: 2px;
+}
+
 .loading-subtext {
   color: #a0b3d3;
   font-size: 0.85rem;
   text-align: center;
-  margin-top: 0.5rem;
   font-family: 'Courier New', monospace;
 }
 
@@ -202,6 +235,24 @@
 .form-section {
   width: 100%;
   max-width: 400px;
+}
+
+.form-container {
+  text-align: center;
+}
+
+.form-title {
+  color: #4a9eff;
+  font-size: 1.5rem;
+  margin: 0 0 0.75rem;
+  font-weight: 600;
+}
+
+.form-description {
+  color: #a0b3d3;
+  font-size: 1rem;
+  margin: 0 0 1.5rem;
+  line-height: 1.4;
 }
 
 .subscription-form,

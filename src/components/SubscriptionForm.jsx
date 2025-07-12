@@ -116,8 +116,6 @@ const SubscriptionForm = ({ onLocationSet }) => {
 
   return (
     <div className="subscription-form">
-      <h2>Get Personal Alerts</h2>
-      <p>Want email alerts for your location? We'll notify you 1 hour before visible passes in your area</p>
 
       <form onSubmit={handleSubmit}>
         <div className="form-group">

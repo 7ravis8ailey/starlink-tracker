@@ -8,6 +8,8 @@ const GlobeView = ({ userLocation }) => {
   const globeEl = useRef()
   const [satellites, setSatellites] = useState([])
   const [loading, setLoading] = useState(false)
+  const [loadingProgress, setLoadingProgress] = useState(0)
+  const [loadingMessage, setLoadingMessage] = useState('')
   const [satelliteCount, setSatelliteCount] = useState(0)
   const [lastUpdated, setLastUpdated] = useState(null)
   const trackerRef = useRef(null)
@@ -16,23 +18,34 @@ const GlobeView = ({ userLocation }) => {
   useEffect(() => {
     const initializeSatelliteTracking = async () => {
       setLoading(true)
+      setLoadingProgress(0)
+      setLoadingMessage('Connecting to orbital database...')
+      
       try {
         console.log('Fetching Starlink TLE data from CelesTrak...')
+        setLoadingProgress(25)
+        setLoadingMessage('Downloading constellation data...')
         
         const response = await axios.get('/api/get-tle-data', {
           timeout: 30000
         })
         
         console.log('TLE Response:', response.data)
+        setLoadingProgress(50)
+        setLoadingMessage('Processing satellite orbits...')
         
         if (response.data && response.data.satellites && response.data.satellites.length > 0) {
           console.log(`Received ${response.data.satellites.length} Starlink satellites`)
+          
+          setLoadingProgress(75)
+          setLoadingMessage('Initializing tracking system...')
           
           // Parse TLE data into satellite records
           const parsedSatellites = parseTLEData(response.data.satellites)
           console.log(`Successfully parsed ${parsedSatellites.length} satellites`)
           
           setSatelliteCount(parsedSatellites.length)
+          setLoadingProgress(90)
           
           // Initialize satellite tracker
           if (trackerRef.current) {
@@ -57,6 +70,13 @@ const GlobeView = ({ userLocation }) => {
             setSatellites(satData)
             setLastUpdated(new Date())
             console.log(`Updated positions for ${satData.length} active satellites`)
+            
+            // Complete loading on first position update
+            if (loading) {
+              setLoadingProgress(100)
+              setLoadingMessage('System ready - tracking active')
+              setTimeout(() => setLoading(false), 500)
+            }
           }, 5000) // Update every 5 seconds
           
         } else {
@@ -119,7 +139,15 @@ const GlobeView = ({ userLocation }) => {
           </div>
           <div className="loading-text">Tracking Starlink</div>
           <div className="loading-text">Real-Time Locations</div>
-          <div className="loading-subtext">Acquiring orbital data...</div>
+          <div className="loading-progress">
+            <div className="progress-bar">
+              <div 
+                className="progress-fill" 
+                style={{ width: `${loadingProgress}%` }}
+              ></div>
+            </div>
+            <div className="loading-subtext">{loadingMessage}</div>
+          </div>
         </div>
       )}
       
