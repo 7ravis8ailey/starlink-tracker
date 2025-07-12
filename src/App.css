@@ -329,22 +329,169 @@
   animation: spin 1s linear infinite;
 }
 
-/* Responsive */
+/* Mobile Responsive Design */
 @media (max-width: 768px) {
+  /* Header adjustments */
+  .app-header {
+    padding: 1.5rem 1rem;
+  }
+  
   .app-header h1 {
     font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .app-header p {
+    font-size: 1rem;
+  }
+  
+  /* Main layout - stack vertically on mobile */
+  .app-main {
+    flex-direction: column;
+    padding: 1rem;
+    gap: 2rem;
+  }
+  
+  /* Globe section mobile */
+  .globe-section {
+    width: 100%;
+    order: 1;
+  }
+  
+  .globe-container {
+    width: 100%;
+    overflow: hidden;
+  }
+  
+  /* Form section mobile */
+  .form-section {
+    width: 100%;
+    order: 2;
   }
   
   .subscription-form,
   .unsubscribe-form {
     padding: 1.5rem;
+    margin: 0;
+  }
+  
+  /* Form elements mobile */
+  .location-input-group {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .location-input-group input {
+    width: 100%;
+  }
+  
+  .geo-button {
+    padding: 0.875rem 1rem;
+    width: 100%;
+    justify-content: center;
+    font-size: 0.9rem;
+  }
+  
+  .geo-button span {
+    display: inline; /* Show text on mobile for clarity */
+  }
+  
+  .submit-button {
+    padding: 1rem;
+    font-size: 1rem;
+  }
+  
+  /* Footer mobile */
+  .app-footer {
+    padding: 1.5rem 1rem;
+  }
+  
+  .app-footer p {
+    font-size: 0.9rem;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .app-header {
+    padding: 1rem 0.5rem;
+  }
+  
+  .app-header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .app-main {
+    padding: 0.5rem;
+    gap: 1.5rem;
+  }
+  
+  .subscription-form,
+  .unsubscribe-form {
+    padding: 1rem;
+    border-radius: 8px;
+  }
+  
+  .form-group input {
+    padding: 0.75rem;
+    font-size: 1rem; /* Prevent zoom on iOS */
   }
   
   .geo-button {
     padding: 0.75rem;
+    font-size: 0.9rem;
   }
   
-  .geo-button span {
-    display: none;
+  .submit-button {
+    padding: 0.875rem;
+  }
+  
+  /* Make globe smaller on very small screens */
+  .globe-container canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+}
+
+/* Landscape mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .app-main {
+    flex-direction: row;
+    gap: 1rem;
+  }
+  
+  .globe-section {
+    flex: 1;
+  }
+  
+  .form-section {
+    flex: 1;
+    max-width: 400px;
+  }
+  
+  .app-header {
+    padding: 1rem;
+  }
+  
+  .app-header h1 {
+    font-size: 1.8rem;
+  }
+}
+
+/* Touch improvements */
+@media (hover: none) and (pointer: coarse) {
+  .submit-button {
+    padding: 1rem;
+    font-size: 1.1rem;
+  }
+  
+  .geo-button {
+    padding: 1rem;
+    min-height: 48px; /* iOS accessibility guideline */
+  }
+  
+  .form-group input {
+    min-height: 48px;
+    font-size: 16px; /* Prevent zoom on iOS */
   }
 }

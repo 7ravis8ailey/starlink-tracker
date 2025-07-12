@@ -8,46 +8,40 @@ const GlobeView = ({ userLocation }) => {
   const [satellites, setSatellites] = useState([])
   const [loading, setLoading] = useState(false)
 
-  // Fetch satellite data - using realistic mock data for now (CORS prevents direct API calls)
+  // Fetch satellite data - now using real N2YO API via Netlify functions
   useEffect(() => {
     const fetchSatellites = async () => {
       setLoading(true)
       try {
-        // Simulate loading time
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
-        // Generate realistic mock Starlink constellation data
-        const generateStarlinkSatellites = () => {
-          const satellites = []
-          
-          // Starlink satellites are typically in orbit planes at ~550km altitude
-          // Generate satellites across multiple orbital planes
-          for (let plane = 0; plane < 12; plane++) {
-            for (let sat = 0; sat < 15; sat++) {
-              const id = plane * 15 + sat + 1
-              const lng = (plane * 30 + sat * 2 + Date.now() / 60000) % 360 - 180 // Orbital motion
-              const lat = Math.sin((sat * 24 + plane * 6) * Math.PI / 180) * 53 // ~53° inclination
-              
-              satellites.push({
-                id: id,
-                name: `Starlink-${id}`,
-                lat: lat,
-                lng: lng,
-                alt: 0.086, // ~550km / 6371km = 0.086 globe units
-                passes: []
-              })
-            }
+        // Call our Netlify function to get real satellite data
+        const response = await axios.get(`/api/get-satellites`, {
+          params: {
+            latitude: 40.7128, // Default to NYC for global view
+            longitude: -74.0060
           }
-          
-          return satellites
-        }
+        })
         
-        const satData = generateStarlinkSatellites()
+        // Transform satellite data for globe visualization
+        const satData = response.data.satellites.map(sat => ({
+          id: sat.satid,
+          name: sat.satname,
+          lat: sat.satlat,
+          lng: sat.satlng,
+          alt: sat.satalt / 6371, // Convert km to globe units
+          passes: sat.passes || []
+        }))
+        
         setSatellites(satData)
-        console.log(`Loaded ${satData.length} simulated Starlink satellites`)
+        console.log(`Loaded ${satData.length} real Starlink satellites`)
         
       } catch (error) {
-        console.error('Failed to load satellites:', error)
+        console.error('Failed to fetch satellites:', error)
+        // Fallback to mock data if API fails
+        setSatellites([
+          { id: 1, name: 'Starlink-1', lat: 40.7, lng: -74.0, alt: 0.1, passes: [] },
+          { id: 2, name: 'Starlink-2', lat: 51.5, lng: -0.1, alt: 0.1, passes: [] },
+          { id: 3, name: 'Starlink-3', lat: 35.7, lng: 139.7, alt: 0.1, passes: [] }
+        ])
       } finally {
         setLoading(false)
       }
@@ -131,8 +125,8 @@ const GlobeView = ({ userLocation }) => {
         
         // Controls
         enablePointerInteraction={true}
-        width={window.innerWidth > 768 ? 600 : window.innerWidth - 40}
-        height={window.innerWidth > 768 ? 600 : 400}
+        width={Math.min(600, window.innerWidth - 40)}
+        height={window.innerWidth > 768 ? 600 : Math.min(400, window.innerHeight * 0.4)}
       />
       
       {satellites.length > 0 && (
