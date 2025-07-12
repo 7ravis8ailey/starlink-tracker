@@ -2,56 +2,85 @@ import { useEffect, useRef, useState } from 'react'
 import Globe from 'react-globe.gl'
 import * as THREE from 'three'
 import axios from 'axios'
+import { parseTLEData, SatelliteTracker } from '../utils/satelliteCalculations'
 
 const GlobeView = ({ userLocation }) => {
   const globeEl = useRef()
   const [satellites, setSatellites] = useState([])
   const [loading, setLoading] = useState(false)
+  const [satelliteCount, setSatelliteCount] = useState(0)
+  const [lastUpdated, setLastUpdated] = useState(null)
+  const trackerRef = useRef(null)
 
-  // Fetch satellite data - now using real N2YO API via Netlify functions
+  // Fetch TLE data and start real-time tracking
   useEffect(() => {
-    const fetchSatellites = async () => {
+    const initializeSatelliteTracking = async () => {
       setLoading(true)
       try {
-        // Call our Netlify function to get real satellite data
-        const response = await axios.get(`/api/get-satellites`, {
-          params: {
-            latitude: 40.7128, // Default to NYC for global view
-            longitude: -74.0060
-          }
+        console.log('Fetching Starlink TLE data from CelesTrak...')
+        
+        const response = await axios.get('/api/get-tle-data', {
+          timeout: 30000
         })
         
-        // Transform satellite data for globe visualization
-        const satData = response.data.satellites.map(sat => ({
-          id: sat.satid,
-          name: sat.satname,
-          lat: sat.satlat,
-          lng: sat.satlng,
-          alt: sat.satalt / 6371, // Convert km to globe units
-          passes: sat.passes || []
-        }))
+        console.log('TLE Response:', response.data)
         
-        setSatellites(satData)
-        console.log(`Loaded ${satData.length} real Starlink satellites`)
+        if (response.data && response.data.satellites && response.data.satellites.length > 0) {
+          console.log(`Received ${response.data.satellites.length} Starlink satellites`)
+          
+          // Parse TLE data into satellite records
+          const parsedSatellites = parseTLEData(response.data.satellites)
+          console.log(`Successfully parsed ${parsedSatellites.length} satellites`)
+          
+          setSatelliteCount(parsedSatellites.length)
+          
+          // Initialize satellite tracker
+          if (trackerRef.current) {
+            trackerRef.current.stopTracking()
+          }
+          
+          trackerRef.current = new SatelliteTracker(parsedSatellites)
+          
+          // Start real-time position updates
+          trackerRef.current.startTracking((positions) => {
+            // Transform positions for globe visualization
+            const satData = positions.map(pos => ({
+              id: pos.id,
+              name: pos.name,
+              lat: pos.lat,
+              lng: pos.lng,
+              alt: pos.alt / 6371, // Convert km to globe units (Earth radius = 6371km)
+              altitude: pos.alt, // Keep original altitude for tooltip
+              velocity: pos.velocity
+            }))
+            
+            setSatellites(satData)
+            setLastUpdated(new Date())
+            console.log(`Updated positions for ${satData.length} active satellites`)
+          }, 5000) // Update every 5 seconds
+          
+        } else {
+          console.log('No TLE data received')
+          setSatellites([])
+        }
         
       } catch (error) {
-        console.error('Failed to fetch satellites:', error)
-        // Fallback to mock data if API fails
-        setSatellites([
-          { id: 1, name: 'Starlink-1', lat: 40.7, lng: -74.0, alt: 0.1, passes: [] },
-          { id: 2, name: 'Starlink-2', lat: 51.5, lng: -0.1, alt: 0.1, passes: [] },
-          { id: 3, name: 'Starlink-3', lat: 35.7, lng: 139.7, alt: 0.1, passes: [] }
-        ])
-      } finally {
-        setLoading(false)
+        console.error('Failed to fetch TLE data:', error)
+        setSatellites([])
       }
+      
+      setLoading(false)
     }
 
-    fetchSatellites()
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchSatellites, 30000)
-    return () => clearInterval(interval)
-  }, []) // Load immediately on component mount, not dependent on userLocation
+    initializeSatelliteTracking()
+
+    // Cleanup on unmount
+    return () => {
+      if (trackerRef.current) {
+        trackerRef.current.stopTracking()
+      }
+    }
+  }, [])
 
   // Auto-rotate globe
   useEffect(() => {
@@ -71,8 +100,13 @@ const GlobeView = ({ userLocation }) => {
   }, [userLocation])
 
   const satelliteObject = () => {
-    const satGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5)
-    const satMaterial = new THREE.MeshBasicMaterial({ color: '#4a9eff' })
+    // Use smaller, more efficient spheres for better performance with thousands of satellites
+    const satGeometry = new THREE.SphereGeometry(0.3, 8, 6) // Lower poly count for performance
+    const satMaterial = new THREE.MeshBasicMaterial({ 
+      color: '#4a9eff',
+      transparent: true,
+      opacity: 0.8
+    })
     return new THREE.Mesh(satGeometry, satMaterial)
   }
 
@@ -96,10 +130,11 @@ const GlobeView = ({ userLocation }) => {
         objectAltitude="alt"
         objectThreeObject={satelliteObject}
         objectLabel={d => `
-          <div style="background: rgba(0,0,0,0.8); padding: 5px; border-radius: 3px;">
-            <strong>${d.name}</strong><br/>
-            Alt: ${(d.alt * 6371).toFixed(0)} km<br/>
-            ${d.passes.length > 0 ? `Next pass in ${getNextPassTime(d.passes)}` : 'No visible passes'}
+          <div style="background: rgba(0,0,0,0.9); padding: 8px; border-radius: 5px; border: 1px solid #4a9eff;">
+            <strong style="color: #4a9eff;">${d.name}</strong><br/>
+            <span style="color: #fff;">Altitude: ${d.altitude ? d.altitude.toFixed(0) : '---'} km</span><br/>
+            <span style="color: #fff;">Velocity: ${d.velocity ? (d.velocity * 3.6).toFixed(1) : '---'} km/h</span><br/>
+            <span style="color: #aaa;">Lat: ${d.lat.toFixed(2)}°, Lng: ${d.lng.toFixed(2)}°</span>
           </div>
         `}
         
@@ -129,28 +164,24 @@ const GlobeView = ({ userLocation }) => {
         height={window.innerWidth > 768 ? 600 : Math.min(400, window.innerHeight * 0.4)}
       />
       
-      {satellites.length > 0 && (
-        <div className="satellite-info">
-          <p>Tracking {satellites.length} satellites</p>
-        </div>
-      )}
+      <div className="satellite-info">
+        {loading ? (
+          <p>Loading Starlink constellation...</p>
+        ) : satelliteCount > 0 ? (
+          <>
+            <p><strong>Currently Tracking {satellites.length} Starlink Satellites</strong></p>
+            <p>Total in Constellation: {satelliteCount}</p>
+            {lastUpdated && (
+              <p>Last Updated: {lastUpdated.toLocaleTimeString()}</p>
+            )}
+          </>
+        ) : (
+          <p>No satellite data available</p>
+        )}
+      </div>
     </div>
   )
 }
 
-// Helper function to calculate next pass time
-const getNextPassTime = (passes) => {
-  if (!passes || passes.length === 0) return 'No data'
-  
-  const now = Date.now() / 1000
-  const nextPass = passes.find(pass => pass.startUTC > now)
-  
-  if (!nextPass) return 'No upcoming passes'
-  
-  const minutesUntil = Math.round((nextPass.startUTC - now) / 60)
-  if (minutesUntil < 60) return `${minutesUntil} minutes`
-  if (minutesUntil < 1440) return `${Math.round(minutesUntil / 60)} hours`
-  return `${Math.round(minutesUntil / 1440)} days`
-}
 
 export default GlobeView

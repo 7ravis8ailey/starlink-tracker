@@ -21,48 +21,52 @@ export const handler = async (event) => {
       }
     }
 
-    // Get Starlink satellites above horizon
-    // Category 52 is Starlink satellites
-    const response = await axios.get(
-      `${N2YO_BASE_URL}/above/${latitude}/${longitude}/0/70/52/&apiKey=${N2YO_API_KEY}`
-    )
-
-    const satellites = response.data.above || []
-
-    // Get visual passes for the next 10 days for a few satellites
-    // (We'll limit this to avoid rate limits)
-    const passPromises = satellites.slice(0, 5).map(async (sat) => {
-      try {
-        const passResponse = await axios.get(
-          `${N2YO_BASE_URL}/visualpasses/${sat.satid}/${latitude}/${longitude}/0/10/300/&apiKey=${N2YO_API_KEY}`
-        )
-        return {
-          ...sat,
-          passes: passResponse.data.passes || []
-        }
-      } catch (error) {
-        console.error(`Failed to get passes for satellite ${sat.satid}:`, error)
-        return {
-          ...sat,
-          passes: []
-        }
+    console.log('N2YO API Key:', N2YO_API_KEY ? 'Present' : 'Missing')
+    
+    // Try to get satellites from the requested location first
+    try {
+      const response = await axios.get(
+        `${N2YO_BASE_URL}/above/${latitude}/${longitude}/0/90/52/&apiKey=${N2YO_API_KEY}`
+      )
+      
+      const satellites = response.data.above || []
+      console.log(`Found ${satellites.length} satellites above ${latitude}, ${longitude}`)
+      console.log('First satellite example:', satellites[0])
+      
+      // Don't do pass predictions for now - just return the satellites
+      const satellitesWithPasses = satellites.map(sat => ({
+        ...sat,
+        passes: []
+      }))
+      
+      console.log(`Returning ${satellitesWithPasses.length} satellites`)
+      
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=60' // Cache for 1 minute
+        },
+        body: JSON.stringify({
+          satellites: satellitesWithPasses,
+          totalCount: satellites.length,
+          timestamp: new Date().toISOString(),
+          location: { latitude, longitude }
+        })
       }
-    })
-
-    const satellitesWithPasses = await Promise.all(passPromises)
-
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=300' // Cache for 5 minutes
-      },
-      body: JSON.stringify({
-        satellites: satellitesWithPasses,
-        totalCount: satellites.length,
-        timestamp: new Date().toISOString()
-      })
+      
+    } catch (apiError) {
+      console.error('N2YO API Error:', apiError.response?.data || apiError.message)
+      
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ 
+          error: 'N2YO API failed',
+          details: apiError.response?.data || apiError.message
+        })
+      }
     }
+
   } catch (error) {
     console.error('Get satellites error:', error)
     return {

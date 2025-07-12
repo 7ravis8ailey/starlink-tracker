@@ -76,6 +76,21 @@
   margin-top: 1rem;
   text-align: center;
   color: #4a9eff;
+  background: rgba(26, 31, 58, 0.8);
+  border: 1px solid rgba(74, 158, 255, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  backdrop-filter: blur(10px);
+}
+
+.satellite-info p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.satellite-info strong {
+  color: #ffffff;
+  font-size: 1rem;
 }
 
 /* Form Section */
