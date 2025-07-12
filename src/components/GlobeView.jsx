@@ -40,11 +40,13 @@ const GlobeView = ({ userLocation }) => {
           setLoadingProgress(75)
           setLoadingMessage('Initializing tracking system...')
           
-          // Parse TLE data into satellite records
-          const parsedSatellites = parseTLEData(response.data.satellites)
-          console.log(`Successfully parsed ${parsedSatellites.length} satellites`)
+          // Parse TLE data into satellite records (limit initial processing)
+          const allSatellites = response.data.satellites
+          const limitedSatellites = allSatellites.slice(0, 1000) // Process only first 1000 for faster loading
+          const parsedSatellites = parseTLEData(limitedSatellites)
+          console.log(`Successfully parsed ${parsedSatellites.length} satellites (from ${allSatellites.length} total)`)
           
-          setSatelliteCount(parsedSatellites.length)
+          setSatelliteCount(allSatellites.length) // Show full count in UI
           setLoadingProgress(90)
           
           // Initialize satellite tracker
@@ -56,8 +58,13 @@ const GlobeView = ({ userLocation }) => {
           
           // Start real-time position updates
           trackerRef.current.startTracking((positions) => {
+            // PERFORMANCE: Only render satellites above 200km and limit to 500 total
+            const filteredPositions = positions
+              .filter(pos => pos.alt > 200) // Remove low/decaying satellites
+              .slice(0, 500) // Limit to 500 satellites for performance
+            
             // Transform positions for globe visualization
-            const satData = positions.map(pos => ({
+            const satData = filteredPositions.map(pos => ({
               id: pos.id,
               name: pos.name,
               lat: pos.lat,
@@ -69,7 +76,7 @@ const GlobeView = ({ userLocation }) => {
             
             setSatellites(satData)
             setLastUpdated(new Date())
-            console.log(`Updated positions for ${satData.length} active satellites`)
+            console.log(`Updated positions for ${satData.length} satellites (filtered from ${positions.length})`)
             
             // Complete loading on first position update
             if (loading) {
@@ -77,7 +84,7 @@ const GlobeView = ({ userLocation }) => {
               setLoadingMessage('System ready - tracking active')
               setTimeout(() => setLoading(false), 500)
             }
-          }, 5000) // Update every 5 seconds
+          }, 30000) // Update every 30 seconds (better battery life)
           
         } else {
           console.log('No TLE data received')
@@ -119,15 +126,16 @@ const GlobeView = ({ userLocation }) => {
     }
   }, [userLocation])
 
+  // Cache geometry and material for better performance
+  const satelliteGeometry = new THREE.SphereGeometry(0.25, 6, 4) // Even smaller, lower poly
+  const satelliteMaterial = new THREE.MeshBasicMaterial({ 
+    color: '#4a9eff',
+    transparent: false, // Remove transparency for better performance
+    opacity: 1
+  })
+
   const satelliteObject = () => {
-    // Use smaller, more efficient spheres for better performance with thousands of satellites
-    const satGeometry = new THREE.SphereGeometry(0.3, 8, 6) // Lower poly count for performance
-    const satMaterial = new THREE.MeshBasicMaterial({ 
-      color: '#4a9eff',
-      transparent: true,
-      opacity: 0.8
-    })
-    return new THREE.Mesh(satGeometry, satMaterial)
+    return new THREE.Mesh(satelliteGeometry, satelliteMaterial)
   }
 
   return (
@@ -184,8 +192,14 @@ const GlobeView = ({ userLocation }) => {
         atmosphereColor="#4a9eff"
         atmosphereAltitude={0.15}
         
-        // Controls
+        // Controls and Performance
         enablePointerInteraction={true}
+        animateIn={false} // Disable entry animation for faster loading
+        rendererConfig={{ 
+          antialias: false, // Disable antialiasing for better performance
+          alpha: false,
+          powerPreference: "low-power" // Optimize for battery life
+        }}
         width={Math.min(600, window.innerWidth - 40)}
         height={window.innerWidth > 768 ? 600 : Math.min(400, window.innerHeight * 0.4)}
       />
